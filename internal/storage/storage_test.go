@@ -20,7 +20,7 @@ func TestMigrationsPersistAndAreIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 	var versions int64
-	if err := db.Table("schema_migrations").Count(&versions).Error; err != nil || versions != 1 {
+	if err := db.Table("schema_migrations").Count(&versions).Error; err != nil || versions != 2 {
 		t.Fatalf("versions=%d err=%v", versions, err)
 	}
 	conn, _ := db.DB()

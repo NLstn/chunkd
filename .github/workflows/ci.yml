@@ -17,6 +17,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
       - name: Formatting
         run: test -z "$(gofmt -l cmd internal)"
       - name: Verify dependencies
@@ -27,11 +31,13 @@ jobs:
           git diff --exit-code -- go.mod go.sum
       - run: go vet ./...
       - run: go test -race -count=1 ./...
+        env:
+          CHUNKD_REQUIRE_JAVA_TEST: '1'
       - name: Build Linux daemon without CGO
         run: CGO_ENABLED=0 go build -trimpath -o bin/chunkd ./cmd/chunkd
       - uses: actions/upload-artifact@v4
         with:
-          name: chunkd-linux-foundation
+          name: chunkd-linux
           path: bin/chunkd
   frontend:
     runs-on: ubuntu-latest
@@ -51,5 +57,5 @@ jobs:
       - run: pnpm build
       - uses: actions/upload-artifact@v4
         with:
-          name: chunkd-web-foundation
+          name: chunkd-web
           path: web/dist

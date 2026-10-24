@@ -33,6 +33,7 @@ func testApp(t *testing.T) *app {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = h.(*app).Close() })
 	return h.(*app)
 }
 

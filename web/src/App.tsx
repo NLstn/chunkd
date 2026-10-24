@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, ApiError } from './api';
 import type { SessionInfo, Server, Job } from './api';
+import ServerPanel from './ServerPanel';
 
 export default function App() {
   const [session, setSession] = useState<SessionInfo | null>(null);
@@ -34,6 +35,25 @@ export default function App() {
 
   useEffect(() => { void refresh(); }, []);
 
+  useEffect(() => {
+    if (!session?.Authenticated) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    async function poll() {
+      try {
+        const [s, j] = await Promise.all([api.servers(), api.jobs()]);
+        if (!cancelled) { setServers(s.value); setJobs(j.value); }
+      } catch (err) {
+        if (!cancelled) {
+          if (err instanceof ApiError && err.status === 401) { setSession({ Authenticated: false, SetupRequired: false }); setServers([]); setJobs([]); }
+          setError(err instanceof Error ? err.message : 'Unable to refresh server status.');
+        }
+      } finally { if (!cancelled) timer = setTimeout(() => void poll(), 2500); }
+    }
+    timer = setTimeout(() => void poll(), 2500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [session?.Authenticated]);
+
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -65,7 +85,7 @@ export default function App() {
 
   return <div className="app">
     <header className="topbar">
-      <a className="brand" href="/" aria-label="Chunkd home"><span className="block-mark" aria-hidden="true">▦</span> chunkd<span className="version">M1</span></a>
+      <a className="brand" href="/" aria-label="Chunkd home"><span className="block-mark" aria-hidden="true">▦</span> chunkd<span className="version">M2</span></a>
       <span className="host-label"><span className="dot" /> Your host. Your world.</span>
       {session?.Authenticated && <button className="quiet" disabled={busy} onClick={() => void signOut()}>Sign out</button>}
     </header>
@@ -86,9 +106,9 @@ export default function App() {
           </form>
         </section> : <section className="dashboard">
           <div className="section-heading"><div><p className="eyebrow">YOUR CONTROL PANEL</p><h1>Overview</h1><p>A little space. Endless possibilities.</p></div><button className="quiet" disabled={busy} onClick={() => void refresh()}>Refresh</button></div>
-          <div className="stats"><div className="card"><span>Servers in view</span><strong>{loaded ? servers.length : '—'}</strong></div><div className="card"><span>Recent jobs</span><strong>{loaded ? jobs.length : '—'}</strong></div><div className="card"><span>Workspace</span><strong className="status">Foundation</strong></div></div>
-          <div className="card server-card"><h2>Your servers</h2>{!loaded ? <p role="status">Loading server data…</p> : servers.length === 0 ? <div className="empty"><span className="empty-block" aria-hidden="true">▧</span><h3>Your first world starts here.</h3><p>There are no Minecraft servers on this host yet.</p><p className="muted">Server creation and native Java controls arrive in M2.</p></div> : <ul className="items">{servers.map(s => <li key={s.ID}><strong>{s.Name}</strong><span>{s.State}</span></li>)}</ul>}</div>
-          <div className="card"><h2>Recent jobs</h2>{!loaded ? <p>Loading jobs…</p> : jobs.length === 0 ? <p className="muted">No activity yet. Future server operations will appear here.</p> : <ul className="items">{jobs.map(j => <li key={j.ID}><strong>{j.Kind}</strong><span>{j.State}</span></li>)}</ul>}</div>
+          <div className="stats"><div className="card"><span>Servers in view</span><strong>{loaded ? servers.length : '—'}</strong></div><div className="card"><span>Recent jobs</span><strong>{loaded ? jobs.length : '—'}</strong></div><div className="card"><span>Workspace</span><strong className="status">Native Java</strong></div></div>
+          <ServerPanel servers={servers} jobs={jobs} loaded={loaded} changed={refresh} />
+          <div className="card"><h2>Recent jobs</h2>{!loaded ? <p>Loading jobs…</p> : jobs.length === 0 ? <p className="muted">No activity yet. Server operations will appear here.</p> : <ul className="items">{jobs.map(j => <li key={j.ID}><div><strong>{j.Kind} · server #{j.ServerID}</strong>{j.Message && <p className="job-error">{j.Message}</p>}</div><span>{j.State}</span></li>)}</ul>}</div>
         </section>}
     </main>
     <footer>CHUNKD <span>Single host · Minecraft Java Edition</span></footer>

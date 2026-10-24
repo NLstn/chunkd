@@ -27,29 +27,51 @@
 | `/odata/Login` | POST | Credentials | Issue a session cookie |
 | `/odata/Logout` | POST | Session | Revoke current session |
 | `/odata/$metadata` | GET | Session | OData CSDL contract |
-| `/odata/Servers` | GET | Session | Read-only server configuration contract |
+| `/odata/Servers` | GET | Session | Server configuration and observed lifecycle state |
 | `/odata/Jobs` | GET | Session | Read-only durable job contract |
+| `/odata/GetJavaRuntimes()` | GET | Session | Trusted installed Java paths and versions |
+| `/odata/GetMinecraftVersions()` | GET | Session | Modern Minecraft release versions |
+| `/odata/CreateServer` | POST | Session + explicit EULA consent | Queue verified installation |
+| `/odata/Servers(id)/Chunkd.Start` | POST | Session | Launch an owned native process |
+| `/odata/Servers(id)/Chunkd.Stop` | POST | Session | Graceful stop with a bounded fallback |
+| `/odata/Servers(id)/Chunkd.Restart` | POST | Session | Stop and reap the old process before launch |
+| `/odata/Servers(id)/Chunkd.RetryInstall` | POST | Session | Retry a failed installation |
 
 Setup/Login/Logout are go-odata unbound actions. GetSession is an unbound
-function. Servers have ID, Name, State, CreatedAt; Jobs have ID, Kind, State,
-CreatedAt. Neither collection is populated automatically. Authentication tables
-are private and never registered as OData entities. Entity mutation and batch
-are unavailable in M1; authenticated metadata and query options come from the
+function. M2 adds server software/version/build, trusted Java path/requirement,
+memory/port, explicit EULA consent, artifact checksum and process/error fields.
+Jobs include ServerID, Message and CompletedAt. Authentication tables
+are private and never registered as OData entities. Generic entity mutation and
+batch remain disabled; authenticated metadata and query options come from the
 library. Collections default to 100 results; clients request explicit limits.
 
 ## Native process model (M2 onward)
 
-The supervisor will execute a validated Java binary directly using explicit
+The supervisor executes a validated Java binary directly using explicit
 argument arrays, never a shell command assembled from user input. It will own
 stdin/stdout/stderr, capture bounded ordered logs and serialize lifecycle changes
-per server. State transitions and asynchronous Jobs will be persisted; client
-polling will not own process lifetime.
+per server. State transitions and asynchronous Jobs are persisted; client
+polling does not own process lifetime. A daemon lock prevents two instances
+sharing a data directory from supervising the same servers.
 
-Start/Stop/Restart will be OData actions with authorization. Stop will first
-request Minecraft's graceful shutdown, then enforce a timeout. Unique ports,
+Start/Stop/Restart are OData actions with authorization. Stop first
+requests Minecraft's graceful shutdown, then enforces a timeout. Unique ports,
 isolated working directories, verified Vanilla/Paper artifacts and explicit EULA
-acceptance must precede a joinable-server workflow. Java compatibility must be
-checked against the selected Minecraft version.
+acceptance precede the first-server workflow. Java compatibility is checked
+against the selected release before installation and again before each launch.
+
+Install/Start/Stop/Restart return 202 and a persisted Job with Location pointing
+to `/odata/Jobs(id)`. A successful Start job means the OS process launched;
+State remains Starting until the captured output contains Minecraft's readiness
+message. A failed or premature exit records Crashed. Per-server operation gates
+reject competing requests with 409; at most four operations execute concurrently.
+The UI polls bounded Servers/Jobs collections every 2.5 seconds. The supervisor
+captures the latest 64 KiB of combined output internally; interactive log access
+and console input remain C-11.
+
+Normal shutdown stops and reaps owned processes. On an unclean daemon restart,
+previous active records become Unknown, and starts are refused. Interrupted jobs
+become Failed. M2 does not adopt or signal a persisted PID.
 
 M4 adds reconciliation after daemon failure. A PID alone is not sufficient proof
 of ownership; recovery must validate process identity and refuse to kill an

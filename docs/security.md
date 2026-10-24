@@ -28,7 +28,8 @@ The request body is limited to 16 KiB; the HTTP server uses bounded header,
 read, write and idle timeouts. Batch is disabled in M1 so nested requests cannot
 skip session or mutation checks. API replies use no-store and nosniff headers.
 
-Only GetSession, Setup and Login are anonymous. Metadata and all entity endpoints
+Only GetSession, Setup and Login are anonymous. Metadata, provisioning, lifecycle
+actions, runtime detection and all entity endpoints
 require a valid, unexpired session. The OData service owns API routing and
 serialization; middleware enforces transport/authentication policy. Private
 credential/session models are not registered with the service.
@@ -60,3 +61,32 @@ MFA, account management, fine-grained permissions, remote-agent trust, audit
 logging and an automatic backup scheduler are outside this foundation. Future
 process and filesystem capabilities require the M4 security/lifecycle tests
 before release.
+
+## Native Java boundary (M2)
+
+Java executable choices come from PATH, JAVA_HOME or CHUNKD_JAVA_PATHS on the
+host. An API caller cannot pass an arbitrary unlisted executable. Each launch
+rechecks the detected Java version and installed JAR checksum, uses an argument
+array, and runs in its own numeric directory below the private servers root.
+There is no arbitrary shell-command/JVM-argument input. Minecraft processes run
+as the daemon's unprivileged account; directory separation is not OS-level
+isolation. Only use trusted Vanilla/Paper artifacts and a dedicated host account.
+
+The installer accepts fixed official HTTPS origins, checks redirects, bounds
+metadata/download sizes and verifies checksums before atomically promoting a
+staged server directory. Vanilla supplies SHA-1; Paper supplies SHA-256. TLS and
+official origin checks remain necessary alongside these upstream checksums.
+Stable Paper builds are selected explicitly and their build/checksum recorded;
+there is no background auto-update.
+
+A checked EULA box is required for each creation; the administrator makes that
+decision. Chunkd writes eula.txt only after that explicit consent. The generated
+properties keep online-mode enabled and RCON/query disabled. No firewall rules
+or router mappings are changed by Chunkd.
+
+The daemon holds an exclusive lock for its data directory. A native child is
+stopped gracefully on normal daemon shutdown, then forcibly terminated after a
+30-second timeout if necessary. Only currently owned process handles/groups are
+used; a PID from SQLite is never used to kill a process. Unknown ownership after
+daemon failure blocks launch until offline operator reconciliation. Full crash
+recovery and filesystem containment tests remain C-15/C-17/C-18.

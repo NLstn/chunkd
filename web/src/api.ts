@@ -1,6 +1,9 @@
 export interface SessionInfo { Authenticated: boolean; SetupRequired: boolean }
-export interface Server { ID: number; Name: string; State: string; CreatedAt: string }
-export interface Job { ID: number; Kind: string; State: string; CreatedAt: string }
+export interface Server { ID: number; Name: string; State: string; CreatedAt: string; Software: string; Version: string; Build: number; JavaPath: string; RequiredJava: number; MemoryMB: number; Port: number; LastError: string; PID: number }
+export interface Job { ID: number; Kind: string; State: string; CreatedAt: string; ServerID: number; Message: string }
+export interface JavaRuntime { Path: string; Version: string; Major: number }
+export interface MinecraftVersion { ID: string }
+export interface CreateServerInput { Name: string; Software: string; Version: string; JavaPath: string; MemoryMB: number; Port: number; EULAAccepted: boolean }
 export interface ODataCollection<T> { value: T[]; '@odata.nextLink'?: string; '@odata.count'?: number }
 export interface Credentials { Username: string; Password: string }
 
@@ -30,4 +33,8 @@ export const api = {
   logout: () => request<void>('Logout', {}),
   servers: () => request<ODataCollection<Server>>('Servers?$orderby=ID&$top=100'),
   jobs: () => request<ODataCollection<Job>>('Jobs?$orderby=ID%20desc&$top=10'),
+  runtimes: async () => (await request<{ value: JavaRuntime[] }>('GetJavaRuntimes()')).value,
+  versions: async () => (await request<{ value: MinecraftVersion[] }>('GetMinecraftVersions()')).value,
+  createServer: (input: CreateServerInput) => request<Job>('CreateServer', input),
+  lifecycle: (id: number, action: 'Start' | 'Stop' | 'Restart' | 'RetryInstall') => request<Job>(`Servers(${id})/Chunkd.${action}`, {}),
 };
