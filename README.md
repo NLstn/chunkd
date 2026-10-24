@@ -9,16 +9,19 @@ processes, with no container runtime required.
 
 ## Current status
 
-M1 foundation: versioned SQLite migrations, Servers/Jobs OData contracts, one
-local administrator, session authentication, dashboard shell and CI. Server
-installation, Java process control, console, files, backups and distribution
-packaging are planned in M2–M5. This foundation cannot launch Minecraft yet.
+M1 and M2: versioned SQLite migrations, one local administrator, authenticated
+OData APIs, a React control panel, Java runtime detection, verified Vanilla/Paper
+installation and native Java Start/Stop/Restart. Console, metrics, editable
+properties, files, backups, crash reconciliation and distribution packaging
+remain in M3–M5. See [the first-server workflow](docs/first-server.md).
 
 There is no user management: no user list, roles, invitations or account screens.
 
 ## Develop locally
 
 Requirements: Go 1.26+, Node.js 24, pnpm 11.25.0; `make` for the combined command.
+Install Java 21+ on the host to run Minecraft 1.20.5–1.21.11, or Java 25+ for
+26.1 onward. Chunkd detects PATH, JAVA_HOME and operator-configured Java paths.
 SQLite is embedded using a pure Go GORM driver; no SQLite installation or C
 compiler is required for normal builds. Linux is the deployment target.
 
@@ -61,6 +64,10 @@ Build outputs are `bin/chunkd` and `web/dist`. M1 deliberately keeps them separa
 frontend embedding and release packaging are tracked in C-19. CI runs Go tests
 with the race detector, vet and migration checks, frontend tests/type-check/build,
 and builds a Linux daemon with CGO disabled.
+CI also installs a JDK and requires an actual JVM test using a locally compiled
+fixture JAR. Other tests cover duplicate launches, unexpected exits, forced
+stops, runtime validation, checksum failures and authenticated OData provisioning.
+Tests do not download or start Minecraft or accept its EULA.
 
 ## Configuration
 
@@ -70,6 +77,7 @@ and builds a Linux daemon with CGO disabled.
 | `CHUNKD_DATA_DIR` | `./data` | SQLite, setup token; future server files/backups |
 | `CHUNKD_ORIGIN` | `https://localhost` | Exact public browser origin, without trailing slash |
 | `CHUNKD_DEV` | `false` | Explicitly allow HTTP cookies for loopback-only development |
+| `CHUNKD_JAVA_PATHS` | empty | Additional absolute Java executable paths (OS path-list separator) |
 
 The secure default assumes an HTTPS reverse proxy serving the frontend and
 forwarding `/odata` to the loopback backend. It does not start a TLS listener.
@@ -83,6 +91,10 @@ cmd/chunkd/                     daemon startup and shutdown
 internal/api/                   go-odata registration and single-admin auth
 internal/config/                environment configuration and validation
 internal/domain/                persisted application contracts
+internal/installer/             official metadata, stable Paper builds and verified downloads
+internal/javaruntime/           trusted host Java detection and validation
+internal/minecraft/             provisioning, durable jobs and lifecycle coordination
+internal/supervisor/            owned native Java processes and bounded output capture
 internal/storage/migrations/    immutable, versioned SQL migrations
 web/src/                       React shell and typed OData client
 docs/                          architecture, security and agreed roadmap
@@ -90,4 +102,5 @@ docs/                          architecture, security and agreed roadmap
 
 See [architecture](docs/architecture.md), [security](docs/security.md), and the
 [MVP roadmap](docs/roadmap.json). GitHub milestones and issues C-01–C-20 track the
-implementation. M1 issues close when their pull request is merged.
+implementation. C-01–C-05 were completed in PR #21. C-06–C-10 are implemented in
+the M2 feature branch; their issues close when its PR is merged.

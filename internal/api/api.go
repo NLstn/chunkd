@@ -17,6 +17,7 @@ import (
 
 	"github.com/NLstn/chunkd/internal/config"
 	"github.com/NLstn/chunkd/internal/domain"
+	"github.com/NLstn/chunkd/internal/minecraft"
 	odata "github.com/nlstn/go-odata"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -39,6 +40,7 @@ type app struct {
 	rateMu     sync.Mutex
 	window     time.Time
 	attempts   int
+	minecraft  *minecraft.Manager
 }
 
 // New registers every application endpoint through go-odata. The surrounding
@@ -65,7 +67,11 @@ func New(db *gorm.DB, cfg config.Config) (http.Handler, error) {
 			return nil, err
 		}
 	}
-	a := &app{db: db, cfg: cfg, service: s}
+	manager, err := minecraft.New(db, cfg.DataDir)
+	if err != nil {
+		return nil, err
+	}
+	a := &app{db: db, cfg: cfg, service: s, minecraft: manager}
 	needed, err := a.setupRequired()
 	if err != nil {
 		return nil, err
@@ -103,6 +109,10 @@ func New(db *gorm.DB, cfg config.Config) (http.Handler, error) {
 		if err := s.RegisterAction(action); err != nil {
 			return nil, err
 		}
+	}
+	if err := a.registerMinecraft(); err != nil {
+		_ = manager.Close()
+		return nil, err
 	}
 	return a, nil
 }
@@ -143,10 +153,10 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(w, 403, "Forbidden", "Same-origin request required")
 			return
 		}
-		// M1 has only these three writable operations. Batch is deliberately deferred
+		// Only registered operations are writable. Batch is deliberately deferred
 		// so no nested request can bypass authentication or mutation policy.
-		if r.Method != "POST" || (path != "/odata/Setup" && path != "/odata/Login" && path != "/odata/Logout") {
-			fail(w, 405, "MethodNotAllowed", "Operation unavailable in M1")
+		if r.Method != "POST" || (path != "/odata/Setup" && path != "/odata/Login" && path != "/odata/Logout" && path != "/odata/CreateServer" && !lifecyclePath.MatchString(path)) {
+			fail(w, 405, "MethodNotAllowed", "Use a registered OData action")
 			return
 		}
 	}

@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/glebarez/sqlite v1.11.0
+	github.com/gofrs/flock v0.13.1
 	github.com/nlstn/go-odata v0.12.0
 	golang.org/x/crypto v0.58.0
 	gorm.io/gorm v1.31.2
