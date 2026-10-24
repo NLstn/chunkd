@@ -6,8 +6,9 @@ install:
 
 # Linux/macOS development: the shell trap stops both children on exit.
 dev:
+	go build -o bin/chunkd ./cmd/chunkd
 	@set -eu; \
-	CHUNKD_DEV=true CHUNKD_ORIGIN=http://127.0.0.1:5173 go run ./cmd/chunkd & backend=$$!; \
+	CHUNKD_DEV=true CHUNKD_ORIGIN=http://127.0.0.1:5173 ./bin/chunkd & backend=$$!; \
 	trap 'kill $$backend 2>/dev/null || true' EXIT INT TERM; \
 	pnpm --dir web dev
 
