@@ -49,12 +49,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.25.0
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-      - run: pnpm build
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
           name: chunkd-web

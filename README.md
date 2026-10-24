@@ -19,7 +19,7 @@ There is no user management: no user list, roles, invitations or account screens
 
 ## Develop locally
 
-Requirements: Go 1.26+, Node.js 24, pnpm 11.25.0; `make` for the combined command.
+Requirements: Go 1.26+, Node.js 24 (including npm); `make` for the combined command.
 Install Java 21+ on the host to run Minecraft 1.20.5–1.21.11, or Java 25+ for
 26.1 onward. Chunkd detects PATH, JAVA_HOME and operator-configured Java paths.
 SQLite is embedded using a pure Go GORM driver; no SQLite installation or C
@@ -39,13 +39,13 @@ Alternatively, run the backend and frontend in separate terminals:
 
 ```sh
 CHUNKD_DEV=true CHUNKD_ORIGIN=http://127.0.0.1:5173 go run ./cmd/chunkd
-pnpm --dir web dev
+npm --prefix web run dev
 ```
 
 On PowerShell, set `$env:CHUNKD_DEV='true'` and
 `$env:CHUNKD_ORIGIN='http://127.0.0.1:5173'`, then run
-`go run ./cmd/chunkd`. Run `pnpm --dir web dev` in another terminal. Install with
-`go mod download` and `pnpm --dir web install --frozen-lockfile`.
+`go run ./cmd/chunkd`. Run `npm --prefix web run dev` in another terminal. Install with
+`go mod download` and `npm --prefix web ci`.
 
 Use the exact browser address above: CSRF checks compare Origin exactly and
 cookies use the browser's host. Vite proxies `/odata` to `127.0.0.1:8080` without
