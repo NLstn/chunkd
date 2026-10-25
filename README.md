@@ -11,9 +11,10 @@ processes, with no container runtime required.
 
 M1 and M2: versioned SQLite migrations, one local administrator, authenticated
 OData APIs, a React control panel, Java runtime detection, verified Vanilla/Paper
-installation and native Java Start/Stop/Restart. Console, metrics, editable
-properties, files, backups, crash reconciliation and distribution packaging
-remain in M3–M5. See [the first-server workflow](docs/first-server.md).
+installation and native Java Start/Stop/Restart. Server detail pages provide
+CPU/memory/uptime metrics, an incremental console with command input, and common
+server.properties settings editable while stopped. Player counts, files, backups,
+crash reconciliation and distribution packaging remain planned. See [the first-server workflow](docs/first-server.md).
 
 There is no user management: no user list, roles, invitations or account screens.
 

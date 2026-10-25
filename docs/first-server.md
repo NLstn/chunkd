@@ -27,7 +27,7 @@ and the [official Minecraft server page](https://www.minecraft.net/en-us/downloa
 3. Read the linked Minecraft EULA. Check acceptance only if you agree, then
    choose **Install server**. This queues an asynchronous job; it does not start
    Java or automatically accept terms on your behalf.
-4. Follow recent jobs. Installation validates metadata, downloads/verifies a JAR
+4. Follow the server’s status and open its details page. Installation validates metadata, downloads/verifies a JAR
    into a private staging directory, writes eula.txt and server.properties, and
    promotes the directory to `data/servers/<ID>/`. A completed install is Stopped.
 5. Choose **Start**. The Start job reports process launch; the server changes
@@ -48,8 +48,13 @@ repair an interrupted promotion: preserve its contents for operator inspection.
 
 States are Installing, Stopped, Starting, Running, Stopping, Crashed, Failed and
 Unknown. Jobs are Queued, Running, Succeeded or Failed. Conflicting operations
-are refused rather than launching parallel Java processes. Logging/console,
-resource metrics and editing server.properties through the UI come in M3.
+are refused rather than launching parallel Java processes. Player reporting,
+files and backups remain planned. Open a server’s details for
+CPU/memory/uptime, console logs and commands, and common server.properties settings.
+Stop the server before changing settings; changes apply on the next start.
+Logs retain the latest 64 KiB through process exit, until the next start or daemon
+restart. CPU and resident memory are available on Linux for owned processes only;
+the first CPU sample and unavailable values display as unavailable.
 
 Normal daemon shutdown attempts to stop every owned server. After daemon failure,
 persisted active records become Unknown and cannot be started, stopped or

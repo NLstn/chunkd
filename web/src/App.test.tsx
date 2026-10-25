@@ -6,11 +6,11 @@ import { api, ApiError } from './api';
 
 vi.mock('./api', async importOriginal => {
   const actual = await importOriginal<typeof import('./api')>();
-  return { ...actual, api: { session: vi.fn(), setup: vi.fn(), login: vi.fn(), logout: vi.fn(), servers: vi.fn(), jobs: vi.fn() } };
+  return { ...actual, api: { session: vi.fn(), setup: vi.fn(), login: vi.fn(), logout: vi.fn(), servers: vi.fn(), jobs: vi.fn(), server: vi.fn(), details: vi.fn(), settings: vi.fn() } };
 });
 
 beforeEach(() => { vi.resetAllMocks(); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); window.location.hash = ''; });
 
 describe('administrator workflow', () => {
   it('sets up one administrator and opens the authenticated empty dashboard', async () => {
@@ -52,4 +52,20 @@ describe('administrator workflow', () => {
     expect(await screen.findByText('Sign in to Chunkd')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Sign in required'));
   });
+});
+
+it('opens a server detail page from the overview without a recent jobs section', async () => {
+ const server = { ID: 1, Name: 'Survival', State: 'Stopped', CreatedAt: '', Software: 'vanilla', Version: '1.21.11', Build: 0, JavaPath: '/usr/bin/java', RequiredJava: 21, MemoryMB: 2048, Port: 25565, LastError: '', PID: 0 };
+ vi.mocked(api.session).mockResolvedValue({ Authenticated: true, SetupRequired: false });
+ vi.mocked(api.servers).mockResolvedValue({ value: [server] });
+ vi.mocked(api.jobs).mockResolvedValue({ value: [] });
+ vi.mocked(api.server).mockResolvedValue(server);
+ vi.mocked(api.details).mockResolvedValue({ CPUPercent: null, MemoryMB: null, UptimeSeconds: null, Players: null, Logs: '', LogOffset: 0, LogReset: false });
+ render(<App />);
+ const user = userEvent.setup();
+ await user.click(await screen.findByRole('link', { name: /View details/ }));
+ expect(await screen.findByRole('heading', { name: 'Server information' })).toBeInTheDocument();
+ expect(screen.queryByText('Recent jobs')).not.toBeInTheDocument();
+ await user.click(screen.getByRole('link', { name: /All servers/ }));
+ expect(await screen.findByRole('heading', { name: 'Overview' })).toBeInTheDocument();
 });

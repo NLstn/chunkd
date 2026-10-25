@@ -22,6 +22,7 @@ type Launch struct {
 	MemoryMB  int64
 }
 type process struct {
+	inputMu  sync.Mutex
 	cmd      *exec.Cmd
 	stdin    io.WriteCloser
 	done     chan struct{}
@@ -30,17 +31,22 @@ type process struct {
 	mu       sync.Mutex
 	tail     string
 	stopping bool
+	started  time.Time
+	sampled  time.Time
+	cpuNanos int64
+	offset   int64
 }
 type Supervisor struct {
 	mu          sync.Mutex
 	processes   map[uint]*process
 	StopTimeout time.Duration
 	closed      bool
+	finished    map[uint]*process
 	wg          sync.WaitGroup
 }
 
 func New() *Supervisor {
-	return &Supervisor{processes: map[uint]*process{}, StopTimeout: 30 * time.Second}
+	return &Supervisor{processes: map[uint]*process{}, finished: map[uint]*process{}, StopTimeout: 30 * time.Second}
 }
 
 // Start launches Java directly with fixed argument boundaries, never a shell.
@@ -61,7 +67,12 @@ func (s *Supervisor) Start(id uint, l Launch, onEvent func(Event)) error {
 	if err != nil {
 		return err
 	}
-	p := &process{cmd: cmd, stdin: stdin, done: make(chan struct{}), ready: make(chan struct{})}
+	p := &process{started: time.Now(), cmd: cmd, stdin: stdin, done: make(chan struct{}), ready: make(chan struct{})}
+	if previous := s.finished[id]; previous != nil {
+		previous.mu.Lock()
+		p.offset = previous.offset + 1
+		previous.mu.Unlock()
+	}
 	cmd.Stdout = p
 	cmd.Stderr = p
 	if err := cmd.Start(); err != nil {
@@ -69,6 +80,7 @@ func (s *Supervisor) Start(id uint, l Launch, onEvent func(Event)) error {
 		return err
 	}
 	s.processes[id] = p
+	delete(s.finished, id)
 	onEvent(Event{State: "Starting", PID: int64(cmd.Process.Pid)})
 	s.wg.Add(2)
 	go func() {
@@ -95,6 +107,7 @@ func (s *Supervisor) Start(id uint, l Launch, onEvent func(Event)) error {
 		}
 		s.mu.Lock()
 		delete(s.processes, id)
+		s.finished[id] = p
 		s.mu.Unlock()
 		onEvent(event)
 		close(p.done)
@@ -121,6 +134,7 @@ func (p *process) Write(b []byte) (int, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.tail += string(b)
+	p.offset += int64(len(b))
 	if len(p.tail) > 64*1024 {
 		p.tail = p.tail[len(p.tail)-64*1024:]
 	}
@@ -140,7 +154,7 @@ func (s *Supervisor) Stop(ctx context.Context, id uint) error {
 	p.mu.Lock()
 	p.stopping = true
 	p.mu.Unlock()
-	_, writeErr := io.WriteString(p.stdin, "stop\n")
+	writeErr := p.sendLine("stop")
 	timer := time.NewTimer(s.StopTimeout)
 	defer timer.Stop()
 	select {

@@ -1,3 +1,5 @@
+export interface ServerDetailsData { CPUPercent: number | null; MemoryMB: number | null; UptimeSeconds: number | null; Players: number | null; Logs: string; LogOffset: number; LogReset: boolean }
+export interface ServerSettings { MOTD: string; MaxPlayers: number; Difficulty: string; GameMode: string; ViewDistance: number; PVP: boolean; WhiteList: boolean }
 export interface SessionInfo { Authenticated: boolean; SetupRequired: boolean }
 export interface Server { ID: number; Name: string; State: string; CreatedAt: string; Software: string; Version: string; Build: number; JavaPath: string; RequiredJava: number; MemoryMB: number; Port: number; LastError: string; PID: number }
 export interface Job { ID: number; Kind: string; State: string; CreatedAt: string; ServerID: number; Message: string }
@@ -27,6 +29,11 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export const api = {
+  server: (id: number) => request<Server>(`Servers(${id})`),
+  details: async (id: number, after: number) => (await request<{ value: ServerDetailsData }>(`GetServerDetails(ServerID=${id},After=${after})`)).value,
+  settings: async (id: number) => (await request<{ value: ServerSettings }>(`GetServerSettings(ServerID=${id})`)).value,
+  saveSettings: (id: number, settings: ServerSettings) => request<void>(`Servers(${id})/Chunkd.SaveSettings`, settings),
+  command: (id: number, command: string) => request<void>(`Servers(${id})/Chunkd.SendCommand`, { Command: command }),
   session: async () => (await request<{ value: SessionInfo }>('GetSession()')).value,
   setup: (credentials: Credentials & { SetupToken: string }) => request<void>('Setup', credentials),
   login: (credentials: Credentials) => request<void>('Login', credentials),
