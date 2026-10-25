@@ -3,8 +3,16 @@ import type { FormEvent } from 'react';
 import { api, ApiError } from './api';
 import type { SessionInfo, Server, Job } from './api';
 import ServerPanel from './ServerPanel';
+import ServerDetails from './ServerDetails';
 
 export default function App() {
+  const [route, setRoute] = useState(window.location.hash);
+  useEffect(() => {
+    const navigate = () => setRoute(window.location.hash);
+    window.addEventListener('hashchange', navigate);
+    return () => window.removeEventListener('hashchange', navigate);
+  }, []);
+  const detailRoute = /^#\/servers\/([1-9][0-9]*)(?:\/(overview|console|settings))?$/.exec(route);
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [servers, setServers] = useState<Server[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -104,11 +112,10 @@ export default function App() {
             <label>Password<input name="password" type="password" required minLength={session.SetupRequired ? 12 : undefined} maxLength={72} autoComplete={session.SetupRequired ? 'new-password' : 'current-password'} />{session.SetupRequired && <small>Use 12–72 bytes. Longer passphrases are encouraged.</small>}</label>
             <button className="primary" disabled={busy}>{busy ? 'Please wait…' : session.SetupRequired ? 'Set up and sign in' : 'Sign in'}</button>
           </form>
-        </section> : <section className="dashboard">
+        </section> : detailRoute ? <ServerDetails key={detailRoute[1]} id={Number(detailRoute[1])} tab={detailRoute[2] ?? 'overview'} /> : <section className="dashboard">
           <div className="section-heading"><div><p className="eyebrow">YOUR CONTROL PANEL</p><h1>Overview</h1><p>A little space. Endless possibilities.</p></div><button className="quiet" disabled={busy} onClick={() => void refresh()}>Refresh</button></div>
-          <div className="stats"><div className="card"><span>Servers in view</span><strong>{loaded ? servers.length : '—'}</strong></div><div className="card"><span>Recent jobs</span><strong>{loaded ? jobs.length : '—'}</strong></div><div className="card"><span>Workspace</span><strong className="status">Native Java</strong></div></div>
+          <div className="stats"><div className="card"><span>Servers in view</span><strong>{loaded ? servers.length : '—'}</strong></div><div className="card"><span>Running servers</span><strong>{loaded ? servers.filter(s => s.State === 'Running').length : '—'}</strong></div><div className="card"><span>Workspace</span><strong className="status">Native Java</strong></div></div>
           <ServerPanel servers={servers} jobs={jobs} loaded={loaded} changed={refresh} />
-          <div className="card"><h2>Recent jobs</h2>{!loaded ? <p>Loading jobs…</p> : jobs.length === 0 ? <p className="muted">No activity yet. Server operations will appear here.</p> : <ul className="items">{jobs.map(j => <li key={j.ID}><div><strong>{j.Kind} · server #{j.ServerID}</strong>{j.Message && <p className="job-error">{j.Message}</p>}</div><span>{j.State}</span></li>)}</ul>}</div>
         </section>}
     </main>
     <footer>CHUNKD <span>Single host · Minecraft Java Edition</span></footer>

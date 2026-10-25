@@ -15,7 +15,7 @@ import (
 	odata "github.com/nlstn/go-odata"
 )
 
-var lifecyclePath = regexp.MustCompile(`^/odata/Servers\([1-9][0-9]*\)/(?:Chunkd\.)?(Start|Stop|Restart|RetryInstall)$`)
+var lifecyclePath = regexp.MustCompile(`^/odata/Servers\([1-9][0-9]*\)/(?:Chunkd\.)?(Start|Stop|Restart|RetryInstall|SendCommand|SaveSettings)$`)
 
 func (a *app) registerMinecraft() error {
 	if err := a.service.RegisterFunction(odata.FunctionDefinition{Name: "GetJavaRuntimes", ReturnType: reflect.TypeOf([]javaruntime.Runtime{}), Handler: func(w http.ResponseWriter, r *http.Request, _ any, _ map[string]any) (any, error) {
@@ -51,7 +51,7 @@ func (a *app) registerMinecraft() error {
 			return err
 		}
 	}
-	return nil
+	return a.registerDetails()
 }
 
 func jobResponse(w http.ResponseWriter, job domain.Job, err error) error {

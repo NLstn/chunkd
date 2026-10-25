@@ -26,7 +26,7 @@ export default function ServerPanel({ servers, jobs, loaded, changed }: { server
     setBusy(true); setError(''); setNotice('');
     try {
       await api.createServer({ Name: String(data.get('name')), Software: String(data.get('software')), Version: String(data.get('version')), JavaPath: String(data.get('java')), MemoryMB: Number(data.get('memory')), Port: Number(data.get('port')), EULAAccepted: data.get('eula') === 'on' });
-      setCreating(false); setNotice('Installation queued. Its progress will appear in recent jobs.');
+      setCreating(false); setNotice('Installation queued. Check the server’s status for progress.');
       await changed();
     } catch (err) { setError(err instanceof Error ? err.message : 'Unable to create server.'); }
     finally { setBusy(false); }
@@ -67,11 +67,12 @@ export default function ServerPanel({ servers, jobs, loaded, changed }: { server
     {!loaded ? <p role="status">Loading server data…</p> : servers.length === 0 ? <div className="empty"><span className="empty-block" aria-hidden="true">▧</span><h3>Your first world starts here.</h3><p>There are no Minecraft servers on this host yet.</p><p className="muted">Create a Vanilla or Paper server to get started.</p></div> : <ul className="server-list">{servers.map(s => {
       const pending = jobs.some(j => j.ServerID === s.ID && (j.State === 'Queued' || j.State === 'Running'));
       return <li key={s.ID} className="server-row">
-        <div className="panel-heading"><h3>{s.Name}</h3><span className={`state state-${s.State.toLowerCase()}`}>{s.State}</span></div>
+        <div className="panel-heading"><h3><a href={`#/servers/${s.ID}`}>{s.Name}</a></h3><span className={`state state-${s.State.toLowerCase()}`}>{s.State}</span></div>
         <p>{s.Software} {s.Version}{s.Build > 0 ? ` · build ${s.Build}` : ''} · {s.MemoryMB} MiB · port <strong>{s.Port}</strong></p>
         {s.State === 'Running' && <p className="join-hint">Join with your host’s IP or hostname and port {s.Port}. Use the same Minecraft version.</p>}
         {s.LastError && <p className="error">{s.LastError}</p>}
         <div className="actions">
+          <a className="quiet detail-link" href={`#/servers/${s.ID}`}>View details<span className="sr-only"> for {s.Name}</span> →</a>
           {['Stopped', 'Crashed'].includes(s.State) && <button className="quiet" disabled={busy || pending} onClick={() => void control(s.ID, 'Start')}>Start {s.Name}</button>}
           {['Running', 'Starting'].includes(s.State) && <button className="quiet" disabled={busy || pending} onClick={() => void control(s.ID, 'Stop')}>Stop {s.Name}</button>}
           {s.State === 'Running' && <button className="quiet" disabled={busy || pending} onClick={() => void control(s.ID, 'Restart')}>Restart {s.Name}</button>}

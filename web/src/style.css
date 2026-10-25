@@ -81,3 +81,26 @@ select { display: block; width: 100%; margin-top: 8px; padding: 12px; border: 1p
 .job-error { margin: 8px 0 0; font-size: .75rem; color: #8d3c25; }
 .join-hint { background: #edf3e7; padding: 10px; border-radius: 4px; }
 @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } .panel-heading { flex-wrap: wrap; } }
+.back-link { display: inline-block; margin-bottom: 28px; font-size: .85rem; text-decoration: none; }
+.detail-link { display: inline-block; border-radius: 6px; padding: .7rem 1rem; text-decoration: none; font-size: .85rem; font-weight: 600; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.server-row h3 a { text-decoration: none; }
+.server-row h3 a:hover { text-decoration: underline; }
+.lifecycle { margin-bottom: 24px; }
+.detail-tabs { display: flex; gap: 24px; border-bottom: 1px solid #cdd7c7; margin-bottom: 28px; }
+.detail-tabs a { padding: 14px 0; text-decoration: none; color: #697466; font-size: .9rem; }
+.detail-tabs a[aria-current] { color: #285437; border-bottom: 3px solid #285437; font-weight: 650; }
+.resource-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.resource-stats strong { font-size: 1.35rem; overflow-wrap: anywhere; }
+.resource-stats small { margin: 0; }
+.server-info { display: grid; grid-template-columns: 150px 1fr; gap: 16px; font-size: .85rem; }
+.server-info dt { color: #697466; }
+.server-info dd { margin: 0; overflow-wrap: anywhere; }
+.console-output { background: #1c2b23; color: #dce9d6; padding: 20px; border-radius: 6px; height: 400px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: .8rem/1.7 ui-monospace, monospace; }
+.command-form { display: flex; align-items: end; gap: 12px; }
+.command-form label { flex: 1; margin: 0; }
+.command-form button { margin-bottom: 1px; }
+.settings-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.notice { background: #edf3e7; border-radius: 6px; padding: 14px; color: #285437; }
+@media (max-width: 900px) { .resource-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .resource-stats { grid-template-columns: 1fr; } .resource-stats .card { flex-direction: column; align-items: start; gap: 12px; } .server-info { grid-template-columns: 1fr; gap: 8px; } .server-info dd { margin-bottom: 12px; } .command-form { align-items: stretch; flex-direction: column; } }
